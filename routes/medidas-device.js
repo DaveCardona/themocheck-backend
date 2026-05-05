@@ -1,16 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const crypto = require("crypto");
 
 /* ─────────────────────────────────────────────
-   ESP32 ENVÍA MEDICIÓN
+   ESP32 ENVÍA MEDICIÓN (VERSIÓN SEGURA)
 ───────────────────────────────────────────── */
 
 router.post("/medidas-device", async (req, res) => {
   try {
-    const { token, temperatura, device_id } = req.body;
+    const { token, temperatura, device_id, signature } = req.body;
 
-    if (!token || temperatura === undefined) {
+    /* ───────── VALIDACIONES BÁSICAS ───────── */
+    if (!token || temperatura === undefined || !device_id) {
       return res.status(400).json({
         success: false,
         message: "Datos incompletos"
@@ -24,45 +26,78 @@ router.post("/medidas-device", async (req, res) => {
       });
     }
 
-    //  VALIDAR JOB
-    const job = await pool.query(`
-      SELECT id_usuario, estado
+    /* ───────── VALIDAR SESIÓN ───────── */
+    const jobResult = await pool.query(`
+      SELECT id_usuario, estado, device_id
       FROM sesiones_medicion
       WHERE token = $1
         AND expires_at > NOW()
     `, [token]);
 
-    if (job.rows.length === 0) {
+    if (jobResult.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        message: "Token inválido"
+        message: "Token inválido o expirado"
       });
     }
 
-    const { id_usuario } = job.rows[0];
+    const session = jobResult.rows[0];
 
-    //  LÍMITE DIARIO
-    const count = await pool.query(`
+    /* ───────── VALIDACIÓN DE ESTADO ───────── */
+    if (session.estado !== "asignado") {
+      return res.status(403).json({
+        success: false,
+        message: "Sesión no asignada a dispositivo"
+      });
+    }
+
+    /* ───────── VALIDACIÓN DISPOSITIVO ───────── */
+    if (session.device_id !== device_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Dispositivo no autorizado"
+      });
+    }
+
+    /* ───────── VALIDACIÓN FIRMA (ANTI FAKE ESP) ───────── */
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.ESP_SECRET)
+      .update(token + temperatura + device_id)
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      return res.status(403).json({
+        success: false,
+        message: "Firma inválida"
+      });
+    }
+
+    const id_usuario = session.id_usuario;
+
+    /* ───────── LÍMITE DIARIO ───────── */
+    const countResult = await pool.query(`
       SELECT COUNT(*) 
       FROM medidas 
       WHERE id_usuario = $1
         AND DATE(created_at) = CURRENT_DATE
     `, [id_usuario]);
 
-    if (parseInt(count.rows[0].count) >= 3) {
+    const total = parseInt(countResult.rows[0].count);
+
+    if (total >= 3) {
       return res.status(403).json({
         success: false,
         message: "Límite diario alcanzado"
       });
     }
 
-    //  GUARDAR MEDIDA
+    /* ───────── GUARDAR MEDICIÓN ───────── */
     await pool.query(`
       INSERT INTO medidas (id_usuario, temperatura)
       VALUES ($1, $2)
     `, [id_usuario, temperatura]);
 
-    //  COMPLETAR JOB
+    /* ───────── COMPLETAR JOB ───────── */
     await pool.query(`
       UPDATE sesiones_medicion
       SET estado = 'completado',
@@ -70,7 +105,7 @@ router.post("/medidas-device", async (req, res) => {
       WHERE token = $1
     `, [token]);
 
-    //  ALERTA
+    /* ───────── ALERTA ───────── */
     if (temperatura >= 37.5) {
       await pool.query(`
         INSERT INTO alertas (id_usuario, temperatura, mensaje)
@@ -84,13 +119,14 @@ router.post("/medidas-device", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Medición registrada"
+      message: "Medición registrada correctamente"
     });
 
   } catch (error) {
     console.error("ERROR MEDIDAS DEVICE:", error);
     return res.status(500).json({
-      success: false
+      success: false,
+      message: "Error en servidor"
     });
   }
 });

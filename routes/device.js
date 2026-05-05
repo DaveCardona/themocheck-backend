@@ -26,6 +26,7 @@ router.get("/device/next-task", async (req, res) => {
       SELECT id, token, id_usuario
       FROM sesiones_medicion
       WHERE estado = 'pendiente'
+        AND device_id IS NULL
         AND expires_at > NOW()
       ORDER BY created_at ASC
       FOR UPDATE SKIP LOCKED
@@ -37,6 +38,19 @@ router.get("/device/next-task", async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "No hay tareas disponibles"
+      });
+    }
+
+    const device = await pool.query(`
+  SELECT activo
+  FROM dispositivos
+  WHERE device_id = $1
+`, [device_id]);
+
+    if (device.rows.length === 0 || !device.rows[0].activo) {
+      return res.status(403).json({
+        success: false,
+        message: "Dispositivo no autorizado"
       });
     }
 
