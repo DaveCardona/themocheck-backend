@@ -26,9 +26,8 @@ router.get("/device/next-task", async (req, res) => {
       SELECT id, token, id_usuario
       FROM sesiones_medicion
       WHERE estado = 'pendiente'
-        AND device_id IS NULL
         AND expires_at > NOW()
-      ORDER BY created_at ASC
+      ORDER BY id ASC
       FOR UPDATE SKIP LOCKED
       LIMIT 1
     `);
