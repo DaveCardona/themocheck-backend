@@ -19,6 +19,9 @@ const sesionMedicionRoutes = require("./routes/sesion-medicion");
 const medidasDeviceRoutes = require("./routes/medidas-device");
 const adminRoutes = require("./routes/admin.routes");
 const adminMedidasRoutes = require("./routes/admin.medidas");
+const deviceRoutes = require("./routes/device");
+
+
 
 
 // Montaje de rutas
@@ -31,6 +34,8 @@ app.use("/", medidasRoutes); //web
 app.use("/", medidasDeviceRoutes); //ESP32
 app.use("/", adminRoutes);
 app.use("/", adminMedidasRoutes);
+
+app.use("/", deviceRoutes);
 
 app.get("/", (req, res) => {
   res.send("API funcionando 🚀");

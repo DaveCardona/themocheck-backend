@@ -17,18 +17,23 @@ router.post("/sesion-medicion", async (req, res) => {
     const token = crypto.randomUUID();
 
     await pool.query(`
-      INSERT INTO sesiones_medicion (token, id_usuario, expires_at)
-      VALUES ($1, $2, NOW() + INTERVAL '5 minutes')
+      INSERT INTO sesiones_medicion (
+        token,
+        id_usuario,
+        estado,
+        expires_at
+      )
+      VALUES ($1, $2, 'pendiente', NOW() + INTERVAL '5 minutes')
     `, [token, id_usuario]);
 
-    res.json({
+    return res.json({
       success: true,
       token
     });
 
   } catch (error) {
     console.error("ERROR SESION MEDICION:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Error creando sesión de medición"
     });
