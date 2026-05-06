@@ -79,7 +79,7 @@ router.post("/medidas-device", async (req, res) => {
       SELECT COUNT(*) 
       FROM medidas 
       WHERE id_usuario = $1
-        AND DATE(created_at) = CURRENT_DATE
+        AND DATE(created_at AT TIME ZONE 'America/Bogota') = CURRENT_DATE
     `, [id_usuario]);
 
     const total = parseInt(countResult.rows[0].count);
@@ -93,15 +93,15 @@ router.post("/medidas-device", async (req, res) => {
 
     /* ───────── GUARDAR MEDICIÓN ───────── */
     await pool.query(`
-      INSERT INTO medidas (id_usuario, temperatura)
-      VALUES ($1, $2)
+      INSERT INTO medidas (id_usuario, temperatura, created_at)
+      VALUES ($1, $2, NOW() AT TIME ZONE 'America/Bogota')
     `, [id_usuario, temperatura]);
 
     /* ───────── COMPLETAR JOB ───────── */
     await pool.query(`
       UPDATE sesiones_medicion
       SET estado = 'completado',
-          completed_at = NOW()
+          completed_at = NOW() AT TIME ZONE 'America/Bogota'
       WHERE token = $1
     `, [token]);
 
