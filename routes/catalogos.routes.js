@@ -23,18 +23,27 @@ router.get("/tipos-documento", async (req, res) => {
 /* ── EMPRESAS ── */
 router.get("/empresas", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id_empresa AS id, nombre FROM empresas"
-    );
+
+    const result = await pool.query(`
+      SELECT
+        id_empresa AS id,
+        nombre
+      FROM empresas
+      WHERE activo = true
+      ORDER BY nombre
+    `);
 
     res.json(result.rows);
 
   } catch (error) {
+
     console.error(error);
+
     res.status(500).json({
       success: false,
       message: "Error obteniendo empresas"
     });
+
   }
 });
 
