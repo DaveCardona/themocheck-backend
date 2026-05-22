@@ -29,6 +29,20 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    const empresaValida = await pool.query(`
+  SELECT id_empresa
+  FROM empresas
+  WHERE id_empresa = $1
+  AND activo = true
+`, [empresaInt]);
+
+    if (empresaValida.rows.length === 0) {
+      return res.json({
+        success: false,
+        message: "La empresa seleccionada no está disponible"
+      });
+    }
+
     if (isNaN(empresaInt)) {
       return res.json({
         success: false,

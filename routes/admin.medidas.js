@@ -19,19 +19,19 @@ router.get("/admin/medidas", async (req, res) => {
             }
         }
 
-        // 🔹 Filtro por empresa (ahora desde tabla empresas)
+        //  Filtro por empresa (ahora desde tabla empresas)
         if (empresa) {
             condiciones.push(`LOWER(e.nombre) LIKE $${i++}`);
             valores.push(`%${empresa.toLowerCase()}%`);
         }
 
-        // 🔹 Filtro por fecha
+        //  Filtro por fecha
         if (fecha) {
             condiciones.push(`DATE(m.fecha) = $${i++}`);
             valores.push(fecha);
         }
 
-        // 🔹 Búsqueda por nombre
+        //  Búsqueda por nombre
         if (search) {
             condiciones.push(`LOWER(u.nombre || ' ' || u.apellido) LIKE $${i++}`);
             valores.push(`%${search.toLowerCase()}%`);

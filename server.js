@@ -20,7 +20,7 @@ const medidasDeviceRoutes = require("./routes/medidas-device");
 const adminRoutes = require("./routes/admin.routes");
 const adminMedidasRoutes = require("./routes/admin.medidas");
 const deviceRoutes = require("./routes/device");
-
+const adminConfigRoutes= require("./routes/admin.config.routes");
 
 
 
@@ -34,6 +34,7 @@ app.use("/", medidasRoutes); //web
 app.use("/", medidasDeviceRoutes); //ESP32
 app.use("/", adminRoutes);
 app.use("/", adminMedidasRoutes);
+app.use("/",adminConfigRoutes);
 
 app.use("/", deviceRoutes);
 
