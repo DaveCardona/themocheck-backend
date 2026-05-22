@@ -10,12 +10,23 @@ router.get("/admin/medidas", async (req, res) => {
         let valores = [];
         let i = 1;
 
+        
         // 🔹 Filtro por estado
         if (estado && estado !== "todos") {
-            if (estado === "fiebre") {
-                condiciones.push(`m.temperatura >= 37.5`);
-            } else if (estado === "normal") {
-                condiciones.push(`m.temperatura < 37.5`);
+
+            if (estado === "hipotermia") {
+                condiciones.push(`m.temperatura < 36.5`);
+            }
+
+            else if (estado === "normal") {
+                condiciones.push(`
+            m.temperatura >= 36.5
+            AND m.temperatura <= 37.5
+        `);
+            }
+
+            else if (estado === "fiebre") {
+                condiciones.push(`m.temperatura > 37.5`);
             }
         }
 
