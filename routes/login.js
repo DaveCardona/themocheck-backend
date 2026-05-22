@@ -21,10 +21,18 @@ router.post("/login", async (req, res) => {
 
     //  Buscar usuario
     const result = await pool.query(
-      `SELECT u.id_usuario, u.username, u.password, u.nombre, u.apellido, r.id_rol, r.nombre AS rol
-       FROM usuarios u
-       JOIN roles r ON u.id_rol = r.id_rol
-       WHERE LOWER(u.username) = $1`,
+      `SELECT 
+      u.id_usuario,
+      u.username,
+      u.password,
+      u.nombre,
+      u.apellido,
+      u.activo,
+      r.id_rol,
+      r.nombre AS rol
+   FROM usuarios u
+   JOIN roles r ON u.id_rol = r.id_rol
+   WHERE LOWER(u.username) = $1`,
       [usernameInput]
     );
 
@@ -38,7 +46,15 @@ router.post("/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    //  Validar contraseña
+    // Validar estado del usuario
+    if (!user.activo) {
+      return res.status(403).json({
+        success: false,
+        message: "Tu usuario se encuentra inactivo. Contacta al administrador."
+      });
+    }
+
+    // Validar contraseña
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
