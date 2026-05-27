@@ -28,24 +28,41 @@ ORDER BY nombre
 
 
 /* Crear empresa */
+/* Crear empresa */
 
 router.post(
     "/admin/empresas",
     async (req, res) => {
 
-        const { nombre } = req.body;
+        const {
+            nombre,
+            direccion,
+            celular,
+            correo
+        } = req.body;
 
         await pool.query(`
-INSERT INTO empresas(nombre)
-VALUES($1)
-`, [nombre]);
+INSERT INTO empresas
+(
+nombre,
+direccion,
+celular,
+correo
+)
+VALUES($1,$2,$3,$4)
+`,
+            [
+                nombre,
+                direccion,
+                celular,
+                correo
+            ]);
 
         res.json({
             success: true
         });
 
     });
-
 
 /* Editar empresa */
 
@@ -54,15 +71,35 @@ router.put(
     async (req, res) => {
 
         const id = req.params.id;
-        const { nombre } = req.body;
+
+        const {
+            nombre,
+            direccion,
+            celular,
+            correo
+        } = req.body;
 
         await pool.query(`
+
 UPDATE empresas
-SET nombre=$1
-WHERE id_empresa=$2
+
+SET
+
+nombre=$1,
+direccion=$2,
+celular=$3,
+correo=$4
+
+WHERE id_empresa=$5
+
 `,
-            [nombre, id]
-        );
+            [
+                nombre,
+                direccion,
+                celular,
+                correo,
+                id
+            ]);
 
         res.json({
             success: true
@@ -234,11 +271,11 @@ AND id_rol!=2
     });
 
 /* TODAS LAS EMPRESAS (admin) */
-router.get("/admin/empresas/catalogo", async (req,res)=>{
+router.get("/admin/empresas/catalogo", async (req, res) => {
 
-  try{
+    try {
 
-    const result=await pool.query(`
+        const result = await pool.query(`
       SELECT
         id_empresa AS id,
         nombre,
@@ -247,21 +284,21 @@ router.get("/admin/empresas/catalogo", async (req,res)=>{
       ORDER BY nombre
     `);
 
-    res.json({
-      success:true,
-      data:result.rows
-    });
+        res.json({
+            success: true,
+            data: result.rows
+        });
 
-  }catch(error){
+    } catch (error) {
 
-    console.error(error);
+        console.error(error);
 
-    res.status(500).json({
-      success:false,
-      message:"Error cargando empresas"
-    });
+        res.status(500).json({
+            success: false,
+            message: "Error cargando empresas"
+        });
 
-  }
+    }
 
 });
 
